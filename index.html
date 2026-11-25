@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Arbre Généalogique — Famille Lenfant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            parchment: {
+              50: '#FDFBF7',
+              100: '#FAF7F2',
+              200: '#F2ECE1',
+              300: '#E5DCCB',
+              400: '#D1C3AA',
+            },
+            forest: {
+              900: '#142621',
+              800: '#1E352F',
+              700: '#2A4A41',
+              600: '#396357',
+              100: '#E8F0EC',
+            },
+            burgundy: {
+              700: '#6E2B2B',
+              600: '#8B3A3A',
+              500: '#A64B4B',
+              100: '#F8ECEC',
+            },
+            gold: {
+              600: '#A67F1E',
+              500: '#C59B27',
+              400: '#D8B44C',
+              100: '#FBF5E4',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background-color: #FAF7F2;
+      color: #1E352F;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .paper-canvas {
+      background-color: #FAF7F2;
+      background-image:
+        radial-gradient(rgba(197, 155, 39, 0.16) 1px, transparent 1px),
+        radial-gradient(rgba(30, 53, 47, 0.07) 1px, #FAF7F2 1px);
+      background-size: 26px 26px;
+      background-position: 0 0, 13px 13px;
+    }
+    #treeViewport {
+      flex: 1 1 auto;
+      min-height: 450px;
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #familySvg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: grab;
+    }
+    #familySvg.grabbing {
+      cursor: grabbing;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F2ECE1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #C59B27;
+      border-radius: 9999px;
+    }
+    .svg-card-group {
+      cursor: pointer;
+    }
+    .svg-card-group:hover .card-bg {
+      stroke: #C59B27;
+      stroke-width: 2.2;
+    }
+  </style>
+</head>
+<body class="bg-parchment-100 text-forest-800">
+
+  <div id="appShell" class="app-shell">
+    <!-- SLEEK COMPACT HEADER -->
+    <header class="bg-forest-800 text-parchment-100 border-b border-gold-500/30 shadow-md z-30 shrink-0">
+      <div class="max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2">
+        <!-- Crest & Title -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center text-forest-900 shadow-inner shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8m0 0c-3.5 0-6-2.5-6-6 0-2.5 2-4.5 4.5-4.5.7 0 1.3.2 1.5.5.2-.3.8-.5 1.5-.5C16 2.5 18 4.5 18 7c0 3.5-2.5 6-6 6zm-5 8h10" />
+            </svg>
+          </div>
+          <div class="truncate">
+            <div class="hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-gold-400 font-semibold">
+              <span>Archives Familiales</span>
+              <span>•</span>
+              <span>1906 — 2026</span>
+            </div>
+            <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-white leading-none truncate">
+              Famille Lenfant
+            </h1>
+          </div>
+        </div>
+
+        <!-- Right Controls: Mobile Search Toggle, Desktop Search, Segmented View Toggle -->
+        <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <!-- Desktop Search -->
+          <div class="hidden md:block relative w-72">
+            <svg class="w-4 h-4 text-gold-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input
+              id="desktopSearchInput"
+              type="text"
+              placeholder="Rechercher un nom, lieu, année..."
+              class="w-full bg-forest-900/90 text-parchment-50 placeholder-parchment-300/60 text-xs pl-9 pr-7 py-2 rounded-xl border border-forest-600 focus:outline-none focus:border-gold-400 transition"
+            />
+            <button id="desktopClearSearch" onclick="clearSearch()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-parchment-300 hover:text-white text-xs p-1">✕</button>
+            <div id="desktopSearchDropdown" class="hidden absolute left-0 right-0 mt-1.5 bg-white text-forest-800 rounded-xl shadow-2xl border border-parchment-300 max-h-72 overflow-y-auto z-50 divide-y divide-parchment-200"></div>
+          </div>
+
+          <!-- Mobile Search Button -->
+          <button
+            onclick="toggleMobileSearch()"
+            id="mobileSearchToggleBtn"
+            class="md:hidden w-8 h-8 rounded-lg bg-forest-900/90 border border-forest-600 flex items-center justify-center text-gold-400 hover:text-white transition"
+            aria-label="Rechercher"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+          </button>
+
+          <!-- Segmented View Switcher -->
+          <div class="flex bg-forest-900/90 p-0.5 sm:p-1 rounded-xl border border-forest-700">
+            <button onclick="switchView('tree')" id="btn-view-tree" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gold-500 text-forest-900 shadow transition">
+              Arbre
+            </button>
+            <button onclick="switchView('directory')" id="btn-view-dir" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold text-parchment-200 hover:text-white transition">
+              Répertoire
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Mobile Search Drawer -->
+      <div id="mobileSearchBar" class="hidden md:hidden px-3 pb-2 relative">
+        <div class="relative">
+          <input
+            id="mobileSearchInput"
+            type="text"
+            placeholder="Rechercher prénom, nom, ville, année..."
+            class="w-full bg-forest-900 text-parchment-50 placeholder-parchment-300/60 text-xs pl-3.5 pr-8 py-2 rounded-xl border border-gold-500/50 focus:outline-none"
+          />
+          <button onclick="clearSearch()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-parchment-300 text-xs p-1">✕</button>
+        </div>
+        <div id="mobileSearchDropdown" class="hidden absolute left-3 right-3 mt-1 bg-white text-forest-800 rounded-xl shadow-2xl border border-parchment-300 max-h-64 overflow-y-auto z-50 divide-y divide-parchment-200"></div>
+      </div>
+
+      <!-- Horizontal Scrollable Branch Filter Bar -->
+      <div class="bg-parchment-200/95 text-forest-800 border-t border-parchment-300 px-3 sm:px-6 py-1.5">
+        <div class="max-w-[1600px] mx-auto flex items-center justify-between gap-3">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button onclick="setBranchFilter('all')" data-branch="all" class="branch-pill px-2.5 py-1 rounded-full text-[11px] font-semibold bg-forest-800 text-white transition shrink-0">
+              Tous (94)
+            </button>
+            <button onclick="setBranchFilter('jp')" data-branch="jp" class="branch-pill px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/90 text-forest-800 border border-parchment-300 transition shrink-0">
+              Jean Pierre
+            </button>
+            <button onclick="setBranchFilter('mf')" data-branch="mf" class="branch-pill px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/90 text-forest-800 border border-parchment-300 transition shrink-0">
+              Marie France
+            </button>
+            <button onclick="setBranchFilter('ag')" data-branch="ag" class="branch-pill px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/90 text-forest-800 border border-parchment-300 transition shrink-0">
+              André Gérard
+            </button>
+            <button onclick="setBranchFilter('jr')" data-branch="jr" class="branch-pill px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/90 text-forest-800 border border-parchment-300 transition shrink-0">
+              Jean Rémy
+            </button>
+          </div>
+
+          <!-- Compact Legend (Desktop) -->
+          <div class="hidden lg:flex items-center gap-3 text-[11px] text-forest-700 shrink-0">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-forest-800"></span> Gén. 1</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gold-500"></span> Gén. 2</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-forest-600"></span> Gén. 3</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-burgundy-600"></span> Gén. 4</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-800"></span> Gén. 5</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEW 1: PURE VECTOR SVG INTERACTIVE FAMILY TREE -->
+    <main id="treeViewport" class="paper-canvas">
+      <!-- Subtle Floating Badge (Top Left) -->
+      <div class="absolute top-3 left-3 z-20 pointer-events-none flex items-center gap-2 bg-white/90 backdrop-blur-xs border border-parchment-300 rounded-xl px-3 py-1.5 shadow-xs">
+        <span class="text-[11px] font-bold text-forest-900" id="statCounter">94 membres</span>
+        <span class="text-parchment-400">•</span>
+        <span class="text-[11px] font-semibold text-burgundy-600">5 générations</span>
+      </div>
+
+      <!-- Pure Vector SVG Canvas -->
+      <svg id="familySvg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="122%">
+            <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#1E352F" flood-opacity="0.09" />
+          </filter>
+          <filter id="highlightGlow" x="-15%" y="-15%" width="130%" height="130%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#C59B27" flood-opacity="0.85" />
+          </filter>
+        </defs>
+        <g id="svgWorldGroup"></g>
+      </svg>
+
+      <!-- Touch-Friendly Bottom-Right Controls -->
+      <div class="absolute bottom-4 right-3 sm:right-5 z-20 flex flex-col items-end gap-2">
+        <div class="flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-parchment-300 shadow-lg">
+          <button
+            onclick="centerOnRoot()"
+            class="px-2.5 py-2 rounded-xl bg-parchment-200 hover:bg-parchment-300 active:scale-95 text-forest-900 text-xs font-bold transition"
+            title="Centrer sur les fondateurs"
+          >
+            Racine
+          </button>
+          <button
+            onclick="fitToScreen()"
+            class="px-2.5 py-2 rounded-xl bg-forest-800 hover:bg-forest-700 active:scale-95 text-white text-xs font-bold transition"
+            title="Afficher tout l'arbre"
+          >
+            Tout voir
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-2xl border border-parchment-300 shadow-lg">
+          <button
+            onclick="zoomBy(-0.18)"
+            class="w-10 h-10 rounded-xl hover:bg-parchment-200 active:bg-parchment-300 flex items-center justify-center text-forest-900 font-bold text-xl transition"
+            aria-label="Zoom arrière"
+          >
+            −
+          </button>
+          <span id="zoomLabel" class="w-11 text-center text-[11px] font-bold text-forest-800 select-none">65%</span>
+          <button
+            onclick="zoomBy(0.18)"
+            class="w-10 h-10 rounded-xl hover:bg-parchment-200 active:bg-parchment-300 flex items-center justify-center text-forest-900 font-bold text-xl transition"
+            aria-label="Zoom avant"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom-Left Gesture Hint -->
+      <div class="absolute bottom-4 left-3 z-20 pointer-events-none hidden sm:flex items-center gap-2 bg-forest-900/85 text-parchment-100 text-[11px] px-3 py-1.5 rounded-full">
+        <span>Glisser pour explorer • Pincer / Molette pour zoomer • Toucher une carte pour sa fiche</span>
+      </div>
+    </main>
+
+    <!-- VIEW 2: DIRECTORY & CHRONOLOGY EXPLORER -->
+    <section id="directoryView" class="hidden flex-1 overflow-y-auto w-full bg-parchment-100">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+          <div>
+            <span class="text-[11px] uppercase tracking-[0.2em] text-burgundy-600 font-bold">Index & Chronologie</span>
+            <h2 class="font-serif text-3xl sm:text-4xl font-bold text-forest-900 mt-0.5">Répertoire de la Famille Lenfant</h2>
+            <p class="text-xs sm:text-sm text-forest-700 mt-1">Consultez tous les membres par génération, branche ou ordre chronologique de naissance.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Sort Toggle -->
+            <button onclick="toggleDirectorySort()" id="dirSortBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-parchment-300 text-forest-800 hover:border-gold-500 transition">
+              Tri : Par Génération
+            </button>
+
+            <!-- Generation Filter Tabs -->
+            <div class="flex flex-wrap gap-1 bg-parchment-200 p-1 rounded-xl border border-parchment-300">
+              <button onclick="setGenFilter('all')" data-gen="all" class="gen-tab px-2.5 py-1 rounded-lg text-xs font-semibold bg-forest-800 text-white transition">Toutes</button>
+              <button onclick="setGenFilter(1)" data-gen="1" class="gen-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-forest-800 transition">Gén. 1</button>
+              <button onclick="setGenFilter(2)" data-gen="2" class="gen-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-forest-800 transition">Gén. 2</button>
+              <button onclick="setGenFilter(3)" data-gen="3" class="gen-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-forest-800 transition">Gén. 3</button>
+              <button onclick="setGenFilter(4)" data-gen="4" class="gen-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-forest-800 transition">Gén. 4</button>
+              <button onclick="setGenFilter(5)" data-gen="5" class="gen-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-forest-800 transition">Gén. 5</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="directoryGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- BIOGRAPHICAL DETAIL MODAL (Bottom Sheet on Mobile, Right Drawer on Desktop) -->
+  <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-end md:items-stretch md:justify-end bg-forest-900/55 backdrop-blur-xs" onclick="closeModalBackdrop(event)">
+    <div class="bg-parchment-50 w-full md:max-w-md max-h-[86dvh] md:max-h-full md:h-full rounded-t-3xl md:rounded-none overflow-y-auto shadow-2xl border-t md:border-t-0 md:border-l border-parchment-300 p-5 sm:p-7 flex flex-col justify-between">
+      <div>
+        <!-- Mobile Drag Handle -->
+        <div class="w-10 h-1 rounded-full bg-parchment-400 mx-auto mb-3 md:hidden"></div>
+
+        <!-- Top Bar -->
+        <div class="flex items-center justify-between pb-3.5 border-b border-parchment-300">
+          <span id="modalGenBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-forest-800 text-white">Génération 1</span>
+          <button onclick="closeDetailModal()" class="w-9 h-9 rounded-full bg-parchment-200 hover:bg-parchment-300 flex items-center justify-center text-forest-900 font-bold transition" aria-label="Fermer">
+            ✕
+          </button>
+        </div>
+
+        <!-- Identity -->
+        <div class="mt-5">
+          <div id="modalBranchLabel" class="text-[11px] font-bold uppercase tracking-widest text-burgundy-600 mb-1">Branche Fondatrice</div>
+          <h3 id="modalFullName" class="font-serif text-3xl font-bold text-forest-900 leading-tight">André Lenfant</h3>
+          <div id="modalNoteBadge" class="hidden mt-2 inline-block text-xs font-semibold text-burgundy-700 bg-burgundy-100 px-2.5 py-1 rounded-lg"></div>
+        </div>
+
+        <!-- Birth & Status Card -->
+        <div class="mt-5 bg-white rounded-2xl p-4 border border-parchment-300 space-y-3">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gold-100 text-gold-600 flex items-center justify-center shrink-0 text-sm">🎂</div>
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-forest-600 font-bold">Naissance</div>
+              <div id="modalBirth" class="text-sm font-semibold text-forest-900">06/02/1908 — Hem</div>
+            </div>
+          </div>
+          <div id="modalStatusRow" class="hidden flex items-start gap-3 pt-2.5 border-t border-parchment-200">
+            <div class="w-8 h-8 rounded-lg bg-parchment-200 text-forest-800 flex items-center justify-center shrink-0 text-sm">🕊️</div>
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-forest-600 font-bold">Statut</div>
+              <div id="modalStatusText" class="text-sm font-semibold text-forest-900">Décédé(e)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Family Connections -->
+        <div id="modalRelations" class="mt-5 space-y-4"></div>
+      </div>
+
+      <!-- Jump to Tree Button -->
+      <div class="mt-6 pt-4 border-t border-parchment-300">
+        <button id="modalLocateBtn" class="w-full py-3 px-4 rounded-xl bg-forest-800 hover:bg-forest-700 active:scale-[0.99] text-white text-sm font-semibold shadow transition flex items-center justify-center gap-2">
+          <span>📍 Localiser dans l'arbre</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. COMPLETE GENEALOGICAL DATASET (ALL 5 GENERATIONS OF FAMILLE LENFANT)
+    // =========================================================================
+    const PEOPLE = [
+      // --- GENERATION 1 (Founders) ---
+      { id: 'andre_1908', firstName: 'André', lastName: 'Lenfant', birthDate: '06/02/1908', birthPlace: 'Hem', gen: 1, branch: 'root', note: 'Fondateur de la lignée' },
+      { id: 'clemence_1906', firstName: 'Clémence', lastName: 'Desbonnets', birthDate: '24/04/1906', birthPlace: 'Lys-lès-Lannoy', gen: 1, branch: 'root', note: 'Fondatrice de la lignée' },
+
+      // --- GENERATION 2 (4 Children + Partners) ---
+      { id: 'jp_1935', firstName: 'Jean Pierre', lastName: 'Lenfant', birthDate: '19/06/1935', birthPlace: 'Hem', gen: 2, branch: 'jp' },
+      { id: 'christiane_1931', firstName: 'Christiane', lastName: 'Lecocq', birthDate: '14/09/1931', birthPlace: '', gen: 2, branch: 'jp' },
+
+      { id: 'mf_1936', firstName: 'Marie France', lastName: 'Lenfant', birthDate: '09/05/1936', birthPlace: 'Hem', gen: 2, branch: 'mf' },
+      { id: 'alain_1935', firstName: 'Alain', lastName: 'Kauffeisen', birthDate: '14/05/1935', birthPlace: 'Metz', gen: 2, branch: 'mf' },
+
+      { id: 'ag_1938', firstName: 'André Gérard', lastName: 'Lenfant', birthDate: '23/02/1938', birthPlace: 'Hem', gen: 2, branch: 'ag' },
+      { id: 'therese_1941', firstName: 'Thérèse', lastName: 'Lefévère', birthDate: '22/07/1941', birthPlace: 'Templeuve B', gen: 2, branch: 'ag' },
+
+      { id: 'jr_1944', firstName: 'Jean Rémy', lastName: 'Lenfant', birthDate: '14/11/1944', birthPlace: 'Hem', gen: 2, branch: 'jr' },
+      { id: 'naomie_morel', firstName: 'Naomie', lastName: 'Morel', birthDate: '', birthPlace: '', gen: 2, branch: 'jr', note: '1er mariage' },
+      { id: 'claudette_1940', firstName: 'Claudette', lastName: 'Salichon', birthDate: '18/11/1940', birthPlace: 'Paris 16', gen: 2, branch: 'jr', note: '2e mariage' },
+
+      // --- GENERATION 3 (17 Grandchildren + Partners) ---
+      // Branch Jean Pierre
+      { id: 'francois_1960', firstName: 'François', lastName: 'Lenfant', birthDate: '29/07/1960', birthPlace: 'Roubaix', gen: 3, branch: 'jp' },
+      { id: 'barbara_1964', firstName: 'Barbara', lastName: 'Varas', birthDate: '07/11/1964', birthPlace: 'Tourcoing', gen: 3, branch: 'jp' },
+
+      { id: 'jerome_1962', firstName: 'Jérôme', lastName: 'Lenfant', birthDate: '13/06/1962', birthPlace: 'Roubaix', gen: 3, branch: 'jp' },
+      { id: 'sabine_1967', firstName: 'Sabine', lastName: 'Blondeau', birthDate: '29/12/1967', birthPlace: 'Lincelles', gen: 3, branch: 'jp' },
+
+      { id: 'christophe_1965', firstName: 'Christophe', lastName: 'Lenfant', birthDate: '17/02/1965', birthPlace: 'Roubaix', gen: 3, branch: 'jp' },
+      { id: 'laurence_1969', firstName: 'Laurence', lastName: 'Bourdon', birthDate: '11/11/1969', birthPlace: 'Creil', gen: 3, branch: 'jp' },
+
+      { id: 'agathe_1967', firstName: 'Agathe', lastName: 'Lenfant', birthDate: '06/03/1967', birthPlace: 'Roubaix', gen: 3, branch: 'jp' },
+      { id: 'francois_noury', firstName: 'François', lastName: 'Noury', birthDate: '25/08/1965', birthPlace: 'Arras', gen: 3, branch: 'jp', deceased: true },
+
+      // Branch Marie France
+      { id: 'marief_1963', firstName: 'Marie F', lastName: 'Kauffeisen', birthDate: '15/08/1963', birthPlace: 'Roubaix', gen: 3, branch: 'mf' },
+      { id: 'olivier_1962', firstName: 'Olivier', lastName: 'Célarié', birthDate: '13/05/1962', birthPlace: 'Roubaix', gen: 3, branch: 'mf' },
+
+      { id: 'vianney_1964', firstName: 'Vianney', lastName: 'Kauffeisen', birthDate: '06/09/1964', birthPlace: 'Roubaix', gen: 3, branch: 'mf' },
+      { id: 'gaelle_1966', firstName: 'Gaëlle', lastName: 'Bonte', birthDate: '24/07/1966', birthPlace: '', gen: 3, branch: 'mf' },
+
+      { id: 'pascaline_1968', firstName: 'Pascaline', lastName: 'Kauffeisen', birthDate: '12/04/1968', birthPlace: 'Croix', gen: 3, branch: 'mf' },
+      { id: 'vincent_1969', firstName: 'Vincent', lastName: 'Guasp', birthDate: '11/11/1969', birthPlace: 'St Maur Fossés', gen: 3, branch: 'mf' },
+
+      { id: 'loic_1970', firstName: 'Loïc', lastName: 'Kauffeisen', birthDate: '10/01/1970', birthPlace: 'Roubaix', gen: 3, branch: 'mf' },
+      { id: 'corinne_1974', firstName: 'Corinne', lastName: 'Lorthios', birthDate: '16/04/1974', birthPlace: 'Desertines', gen: 3, branch: 'mf' },
+
+      { id: 'thibault_1972', firstName: 'Thibault', lastName: 'Kauffeisen', birthDate: '01/01/1972', birthPlace: 'Roubaix', gen: 3, branch: 'mf' },
+      { id: 'virginie_1973', firstName: 'Virginie', lastName: 'Godichet', birthDate: '05/11/1973', birthPlace: 'Douai', gen: 3, branch: 'mf' },
+
+      { id: 'remy_1975', firstName: 'Rémy', lastName: 'Kauffeisen', birthDate: '15/06/1975', birthPlace: 'Roubaix', gen: 3, branch: 'mf' },
+      { id: 'natacha_1977', firstName: 'Natacha', lastName: 'Vienne', birthDate: '16/09/1977', birthPlace: 'Croix', gen: 3, branch: 'mf' },
+
+      // Branch André Gérard
+      { id: 'nathalie_1963', firstName: 'Nathalie', lastName: 'Lenfant', birthDate: '14/01/1963', birthPlace: 'Roubaix', gen: 3, branch: 'ag' },
+      { id: 'yves_1959', firstName: 'Yves', lastName: 'Grange', birthDate: '28/06/1959', birthPlace: 'Lille', gen: 3, branch: 'ag', deceased: true },
+
+      { id: 'frederic_1964', firstName: 'Frédéric', lastName: 'Lenfant', birthDate: '08/09/1964', birthPlace: 'Roubaix', gen: 3, branch: 'ag' },
+      { id: 'valerie_1968', firstName: 'Valérie', lastName: 'Bailly', birthDate: '24/08/1968', birthPlace: 'Hesdin', gen: 3, branch: 'ag', note: '1re union' },
+      { id: 'sandrine_1970', firstName: 'Sandrine', lastName: '(Épouse Frédéric)', birthDate: '06/04/1970', birthPlace: 'Ronse', gen: 3, branch: 'ag', note: '2e mariage' },
+
+      { id: 'julie_1972', firstName: 'Julie', lastName: 'Lenfant', birthDate: '01/07/1972', birthPlace: 'Villeneuve-d\'Ascq', gen: 3, branch: 'ag' },
+      { id: 'serge_1968', firstName: 'Serge', lastName: 'Aguas', birthDate: '21/01/1968', birthPlace: 'Corbeil-Essonnes', gen: 3, branch: 'ag' },
+
+      { id: 'brice_1977', firstName: 'Brice', lastName: 'Lenfant', birthDate: '05/03/1977', birthPlace: 'Porto-Vecchio', gen: 3, branch: 'ag' },
+      { id: 'eli_1979', firstName: 'Eli', lastName: 'Korman', birthDate: '18/01/1979', birthPlace: 'Australie', gen: 3, branch: 'ag' },
+
+      { id: 'benjamin_1981', firstName: 'Benjamin', lastName: 'Lenfant', birthDate: '25/09/1981', birthPlace: 'Porto-Vecchio', gen: 3, branch: 'ag' },
+      { id: 'tony_1982', firstName: 'Tony', lastName: 'Ecalle', birthDate: '15/11/1982', birthPlace: 'Bagnolet', gen: 3, branch: 'ag' },
+
+      // Branch Jean Rémy
+      { id: 'constance_1968', firstName: 'Constance', lastName: 'Ménard', birthDate: '17/05/1968', birthPlace: 'Croix', gen: 3, branch: 'jr', note: 'Fille de Naomie' },
+      { id: 'geraldine_hochet', firstName: 'Géraldine', lastName: 'Hochet', birthDate: '', birthPlace: '', gen: 3, branch: 'jr', note: 'Fille de Claudette' },
+
+      // --- GENERATION 4 (Great-Grandchildren + Partners) ---
+      // Under François & Barbara
+      { id: 'maelys_1996', firstName: 'Maëlys', lastName: 'Lenfant', birthDate: '06/11/1996', birthPlace: 'Tourcoing', gen: 4, branch: 'jp' },
+      { id: 'cyprille_2000', firstName: 'Cyprille', lastName: 'Lenfant', birthDate: '22/10/2000', birthPlace: 'Lille', gen: 4, branch: 'jp' },
+      { id: 'jules_2002', firstName: 'Jules', lastName: 'Lenfant', birthDate: '24/05/2002', birthPlace: 'Beuvry', gen: 4, branch: 'jp' },
+
+      // Under Jérôme & Sabine
+      { id: 'marie_1994', firstName: 'Marie', lastName: 'Lenfant', birthDate: '09/05/1994', birthPlace: 'Croix', gen: 4, branch: 'jp' },
+      { id: 'jeanne_2000', firstName: 'Jeanne', lastName: 'Lenfant', birthDate: '07/10/2000', birthPlace: 'Croix', gen: 4, branch: 'jp' },
+
+      // Under Christophe & Laurence
+      { id: 'justine_1995', firstName: 'Justine', lastName: 'Lenfant', birthDate: '29/04/1995', birthPlace: 'Beuvry', gen: 4, branch: 'jp' },
+      { id: 'joran_1992', firstName: 'Joran', lastName: 'Scharre', birthDate: '03/05/1992', birthPlace: 'St Pol/Ternoise', gen: 4, branch: 'jp', note: 'Compagnon' },
+      { id: 'gregoire_2001', firstName: 'Grégoire', lastName: 'Lenfant', birthDate: '03/06/2001', birthPlace: 'Beuvry', gen: 4, branch: 'jp' },
+      { id: 'eulalie_1994', firstName: 'Eulalie', lastName: 'Lenfant', birthDate: '18/03/1994', birthPlace: 'Roubaix', gen: 4, branch: 'jp' },
+
+      // Under Agathe & François Noury
+      { id: 'clemence_1996', firstName: 'Clémence', lastName: 'Noury', birthDate: '20/01/1996', birthPlace: 'Beuvry', gen: 4, branch: 'jp' },
+      { id: 'pauline_1998', firstName: 'Pauline', lastName: 'Noury', birthDate: '29/04/1998', birthPlace: 'Beuvry', gen: 4, branch: 'jp' },
+
+      // Under Marie F & Olivier Célarié
+      { id: 'calixte_1989', firstName: 'Calixte', lastName: 'Célarié', birthDate: '03/05/1989', birthPlace: 'Roubaix', gen: 4, branch: 'mf' },
+      { id: 'lucas_1992', firstName: 'Lucas', lastName: 'Dalla Sartora', birthDate: '27/02/1992', birthPlace: 'Moyeuvre-Grande', gen: 4, branch: 'mf', note: 'Mari' },
+      { id: 'bonaventure_1991', firstName: 'Bonaventure', lastName: 'Célarié', birthDate: '22/06/1991', birthPlace: 'Roubaix', gen: 4, branch: 'mf' },
+      { id: 'ambre_1997', firstName: 'Ambre', lastName: 'Célarié', birthDate: '17/04/1997', birthPlace: 'Annecy', gen: 4, branch: 'mf' },
+      { id: 'matheo_2009', firstName: 'Mathéo', lastName: 'Seité', birthDate: '17/04/2009', birthPlace: 'Lille', gen: 4, branch: 'mf', note: "Fils d'Olivier" },
+
+      // Under Vianney & Gaëlle
+      { id: 'arthus_1991', firstName: 'Arthus', lastName: 'Kauffeisen', birthDate: '24/07/1991', birthPlace: 'Annecy', gen: 4, branch: 'mf' },
+      { id: 'theo_1994', firstName: 'Théo', lastName: 'Kauffeisen', birthDate: '10/07/1994', birthPlace: 'Annecy', gen: 4, branch: 'mf' },
+      { id: 'noah_2003', firstName: 'Noah', lastName: 'Kauffeisen', birthDate: '03/05/2003', birthPlace: 'St Eustache', gen: 4, branch: 'mf' },
+
+      // Under Pascaline & Vincent Guasp
+      { id: 'hippolyte_2003', firstName: 'Hippolyte', lastName: 'Guasp', birthDate: '05/07/2003', birthPlace: 'Paris 19', gen: 4, branch: 'mf' },
+      { id: 'lucien_2006', firstName: 'Lucien', lastName: 'Guasp', birthDate: '28/03/2006', birthPlace: 'Paris 17', gen: 4, branch: 'mf' },
+      { id: 'lehane_2007', firstName: 'Léhane', lastName: 'Guasp', birthDate: '05/07/2007', birthPlace: 'Roubaix', gen: 4, branch: 'mf' },
+
+      // Under Loïc & Corinne
+      { id: 'seth_1999', firstName: 'Seth', lastName: 'Kauffeisen', birthDate: '25/12/1999', birthPlace: 'Montréal', gen: 4, branch: 'mf' },
+      { id: 'ethan_2001', firstName: 'Ethan', lastName: 'Kauffeisen', birthDate: '24/08/2001', birthPlace: 'Montréal', gen: 4, branch: 'mf' },
+
+      // Under Thibault & Virginie
+      { id: 'hanae_2001', firstName: 'Hanaé', lastName: 'Kauffeisen', birthDate: '09/02/2001', birthPlace: 'Lille', gen: 4, branch: 'mf' },
+      { id: 'tao_2004', firstName: 'Tao', lastName: 'Kauffeisen', birthDate: '11/03/2004', birthPlace: 'Lille', gen: 4, branch: 'mf' },
+      { id: 'leocadie_2008', firstName: 'Léocadie', lastName: 'Kauffeisen', birthDate: '03/11/2008', birthPlace: 'Roubaix', gen: 4, branch: 'mf' },
+
+      // Under Rémy & Natacha
+      { id: 'zacharie_2005', firstName: 'Zacharie', lastName: 'Kauffeisen', birthDate: '19/09/2005', birthPlace: 'Roubaix', gen: 4, branch: 'mf' },
+      { id: 'gedeon_2007', firstName: 'Gédéon', lastName: 'Kauffeisen', birthDate: '09/09/2007', birthPlace: 'Roubaix', gen: 4, branch: 'mf' },
+      { id: 'leia_2011', firstName: 'Leia', lastName: 'Kauffeisen', birthDate: '15/03/2011', birthPlace: 'Pau', gen: 4, branch: 'mf' },
+
+      // Under Nathalie & Yves Grange
+      { id: 'auxane_1992', firstName: 'Auxane', lastName: 'Grange', birthDate: '19/11/1992', birthPlace: 'Lille', gen: 4, branch: 'ag' },
+      { id: 'fred_fournier', firstName: 'Frédéric', lastName: 'Fournier', birthDate: '25/06', birthPlace: 'Lille', gen: 4, branch: 'ag', note: 'Compagnon' },
+      { id: 'timothee_1996', firstName: 'Timothée', lastName: 'Grange', birthDate: '12/12/1996', birthPlace: 'Lille', gen: 4, branch: 'ag' },
+      { id: 'nina_1996', firstName: 'Nina', lastName: '(Compagne)', birthDate: '05/04/1996', birthPlace: '', gen: 4, branch: 'ag', note: 'Compagne' },
+      { id: 'timeo_2013', firstName: 'Timéo', lastName: 'Delvarre', birthDate: '09/10/2013', birthPlace: 'Roubaix', gen: 4, branch: 'ag', note: 'Fils accueilli' },
+
+      // Under Frédéric & Valérie / Sandrine
+      { id: 'zoe_2001', firstName: 'Zoé', lastName: 'Lenfant', birthDate: '06/12/2001', birthPlace: 'Croix', gen: 4, branch: 'ag' },
+      { id: 'raphael_2004', firstName: 'Raphaël', lastName: 'Lenfant', birthDate: '04/03/2004', birthPlace: 'Croix', gen: 4, branch: 'ag' },
+      { id: 'galatee_1997', firstName: 'Galatée', lastName: 'Lenfant', birthDate: '21/04/1997', birthPlace: 'Roubaix', gen: 4, branch: 'ag' },
+      { id: 'jade_2004', firstName: 'Jade', lastName: 'Rodriguez', birthDate: '02/02/2004', birthPlace: '', gen: 4, branch: 'ag', note: 'Fille de Sandrine' },
+
+      // Under Julie & Serge Aguas
+      { id: 'yael_2001', firstName: 'Yael', lastName: 'Aguas', birthDate: '11/12/2001', birthPlace: 'Paris', gen: 4, branch: 'ag' },
+      { id: 'neo_2005', firstName: 'Néo', lastName: 'Aguas', birthDate: '02/05/2005', birthPlace: 'Paris', gen: 4, branch: 'ag' },
+      { id: 'goni_2015', firstName: 'Goni', lastName: 'Aguas', birthDate: '26/01/2015', birthPlace: 'Israel', gen: 4, branch: 'ag' },
+
+      // Under Brice & Eli Korman
+      { id: 'avigail_2009', firstName: 'Avigail', lastName: 'Lenfant', birthDate: '16/08/2009', birthPlace: 'Israel', gen: 4, branch: 'ag' },
+      { id: 'dori_2011', firstName: 'Dori', lastName: 'Lenfant', birthDate: '16/02/2011', birthPlace: 'Israel', gen: 4, branch: 'ag' },
+      { id: 'eliott_2015', firstName: 'Eliott', lastName: 'Lenfant', birthDate: '2015', birthPlace: '', gen: 4, branch: 'ag' },
+
+      // Under Benjamin & Tony Ecalle
+      { id: 'gabriel_2010', firstName: 'Gabriel', lastName: 'Lenfant / Ecalle', birthDate: '12/10/2010', birthPlace: 'St Brieuc', gen: 4, branch: 'ag' },
+      { id: 'zoe_2013', firstName: 'Zoé', lastName: 'Lenfant / Ecalle', birthDate: '14/08/2013', birthPlace: 'Dreux', gen: 4, branch: 'ag' },
+
+      // Under Constance Ménard
+      { id: 'elea_menard', firstName: 'Eléa', lastName: 'Ménard', birthDate: '12/10/2010', birthPlace: 'St Brieuc', gen: 4, branch: 'jr' },
+      { id: 'jolan_menard', firstName: 'Jolan', lastName: 'Ménard', birthDate: '14/08/2013', birthPlace: 'Dreux', gen: 4, branch: 'jr' },
+      { id: 'scarlett_2011', firstName: 'Scarlett', lastName: 'Ménard', birthDate: '02/10/2011', birthPlace: 'Roubaix', gen: 4, branch: 'jr' },
+      { id: 'voltaire_2017', firstName: 'Voltaire', lastName: 'Ménard', birthDate: '12/01/2017', birthPlace: 'Villeneuve-d\'Ascq', gen: 4, branch: 'jr' },
+
+      // Under Géraldine Hochet
+      { id: 'stephanie_hochet', firstName: 'Stéphanie', lastName: 'Hochet', birthDate: '', birthPlace: '', gen: 4, branch: 'jr' },
+
+      // --- GENERATION 5 (Great-Great-Grandchildren) ---
+      { id: 'freyja_2022', firstName: 'Freyja', lastName: 'Scharre Lenfant', birthDate: '15/05/2022', birthPlace: 'Merville', gen: 5, branch: 'jp' },
+      { id: 'lazare_2019', firstName: 'Lazare', lastName: 'Dalla Sartora', birthDate: '20/04/2019', birthPlace: 'Milan', gen: 5, branch: 'mf' },
+      { id: 'narcisse_2021', firstName: 'Narcisse', lastName: 'Dalla Sartora', birthDate: '29/05/2021', birthPlace: 'Milan', gen: 5, branch: 'mf' },
+    ];
+
+    // =========================================================================
+    // 2. HIERARCHICAL TREE STRUCTURE
+    // =========================================================================
+    const TREE_ROOT = {
+      id: 'unit_founders',
+      branch: 'root',
+      primary: 'andre_1908',
+      partner: 'clemence_1906',
+      unionStatus: 'Mariés',
+      children: [
+        // 1. Jean Pierre Lenfant
+        {
+          id: 'unit_jp',
+          branch: 'jp',
+          primary: 'jp_1935',
+          partner: 'christiane_1931',
+          unionStatus: 'Divorcés',
+          children: [
+            {
+              id: 'unit_francois',
+              branch: 'jp',
+              primary: 'francois_1960',
+              partner: 'barbara_1964',
+              unionStatus: 'Divorcés',
+              children: [
+                { id: 'u_maelys', branch: 'jp', primary: 'maelys_1996', children: [] },
+                { id: 'u_cyprille', branch: 'jp', primary: 'cyprille_2000', children: [] },
+                { id: 'u_jules', branch: 'jp', primary: 'jules_2002', children: [] },
+              ],
+            },
+            {
+              id: 'unit_jerome',
+              branch: 'jp',
+              primary: 'jerome_1962',
+              partner: 'sabine_1967',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_marie', branch: 'jp', primary: 'marie_1994', children: [] },
+                { id: 'u_jeanne', branch: 'jp', primary: 'jeanne_2000', children: [] },
+              ],
+            },
+            {
+              id: 'unit_christophe',
+              branch: 'jp',
+              primary: 'christophe_1965',
+              partner: 'laurence_1969',
+              unionStatus: 'Mariés',
+              children: [
+                {
+                  id: 'u_justine',
+                  branch: 'jp',
+                  primary: 'justine_1995',
+                  partner: 'joran_1992',
+                  unionStatus: 'Compagnons',
+                  children: [
+                    { id: 'u_freyja', branch: 'jp', primary: 'freyja_2022', children: [] },
+                  ],
+                },
+                { id: 'u_gregoire', branch: 'jp', primary: 'gregoire_2001', children: [] },
+                { id: 'u_eulalie', branch: 'jp', primary: 'eulalie_1994', children: [] },
+              ],
+            },
+            {
+              id: 'unit_agathe',
+              branch: 'jp',
+              primary: 'agathe_1967',
+              partner: 'francois_noury',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_clemence', branch: 'jp', primary: 'clemence_1996', children: [] },
+                { id: 'u_pauline', branch: 'jp', primary: 'pauline_1998', children: [] },
+              ],
+            },
+          ],
+        },
+
+        // 2. Marie France Lenfant
+        {
+          id: 'unit_mf',
+          branch: 'mf',
+          primary: 'mf_1936',
+          partner: 'alain_1935',
+          unionStatus: 'Divorcés',
+          children: [
+            {
+              id: 'unit_marief',
+              branch: 'mf',
+              primary: 'marief_1963',
+              partner: 'olivier_1962',
+              unionStatus: 'Divorcés',
+              children: [
+                {
+                  id: 'u_calixte',
+                  branch: 'mf',
+                  primary: 'calixte_1989',
+                  partner: 'lucas_1992',
+                  unionStatus: 'Mariés',
+                  children: [
+                    { id: 'u_lazare', branch: 'mf', primary: 'lazare_2019', children: [] },
+                    { id: 'u_narcisse', branch: 'mf', primary: 'narcisse_2021', children: [] },
+                  ],
+                },
+                { id: 'u_bonaventure', branch: 'mf', primary: 'bonaventure_1991', children: [] },
+                { id: 'u_ambre', branch: 'mf', primary: 'ambre_1997', children: [] },
+                { id: 'u_matheo', branch: 'mf', primary: 'matheo_2009', badge: "Fils d'Olivier", children: [] },
+              ],
+            },
+            {
+              id: 'unit_vianney',
+              branch: 'mf',
+              primary: 'vianney_1964',
+              partner: 'gaelle_1966',
+              unionStatus: 'Divorcés',
+              children: [
+                { id: 'u_arthus', branch: 'mf', primary: 'arthus_1991', children: [] },
+                { id: 'u_theo', branch: 'mf', primary: 'theo_1994', children: [] },
+                { id: 'u_noah', branch: 'mf', primary: 'noah_2003', children: [] },
+              ],
+            },
+            {
+              id: 'unit_pascaline',
+              branch: 'mf',
+              primary: 'pascaline_1968',
+              partner: 'vincent_1969',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_hippolyte', branch: 'mf', primary: 'hippolyte_2003', children: [] },
+                { id: 'u_lucien', branch: 'mf', primary: 'lucien_2006', children: [] },
+                { id: 'u_lehane', branch: 'mf', primary: 'lehane_2007', children: [] },
+              ],
+            },
+            {
+              id: 'unit_loic',
+              branch: 'mf',
+              primary: 'loic_1970',
+              partner: 'corinne_1974',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_seth', branch: 'mf', primary: 'seth_1999', children: [] },
+                { id: 'u_ethan', branch: 'mf', primary: 'ethan_2001', children: [] },
+              ],
+            },
+            {
+              id: 'unit_thibault',
+              branch: 'mf',
+              primary: 'thibault_1972',
+              partner: 'virginie_1973',
+              unionStatus: 'Divorcés',
+              children: [
+                { id: 'u_hanae', branch: 'mf', primary: 'hanae_2001', children: [] },
+                { id: 'u_tao', branch: 'mf', primary: 'tao_2004', children: [] },
+                { id: 'u_leocadie', branch: 'mf', primary: 'leocadie_2008', children: [] },
+              ],
+            },
+            {
+              id: 'unit_remy',
+              branch: 'mf',
+              primary: 'remy_1975',
+              partner: 'natacha_1977',
+              unionStatus: 'Divorcés',
+              children: [
+                { id: 'u_zacharie', branch: 'mf', primary: 'zacharie_2005', children: [] },
+                { id: 'u_gedeon', branch: 'mf', primary: 'gedeon_2007', children: [] },
+                { id: 'u_leia', branch: 'mf', primary: 'leia_2011', children: [] },
+              ],
+            },
+          ],
+        },
+
+        // 3. André Gérard Lenfant
+        {
+          id: 'unit_ag',
+          branch: 'ag',
+          primary: 'ag_1938',
+          partner: 'therese_1941',
+          unionStatus: 'Divorcés',
+          children: [
+            {
+              id: 'unit_nathalie',
+              branch: 'ag',
+              primary: 'nathalie_1963',
+              partner: 'yves_1959',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_auxane', branch: 'ag', primary: 'auxane_1992', partner: 'fred_fournier', unionStatus: 'Compagnons', children: [] },
+                { id: 'u_timothee', branch: 'ag', primary: 'timothee_1996', partner: 'nina_1996', unionStatus: 'Compagnons', children: [] },
+                { id: 'u_timeo', branch: 'ag', primary: 'timeo_2013', badge: 'Fils accueilli', children: [] },
+              ],
+            },
+            {
+              id: 'unit_frederic',
+              branch: 'ag',
+              primary: 'frederic_1964',
+              partner: 'valerie_1968',
+              unionStatus: '1re union',
+              secondPartner: 'sandrine_1970',
+              secondUnionLabel: '2e mariage',
+              children: [
+                { id: 'u_zoe01', branch: 'ag', primary: 'zoe_2001', children: [] },
+                { id: 'u_raphael', branch: 'ag', primary: 'raphael_2004', children: [] },
+                { id: 'u_galatee', branch: 'ag', primary: 'galatee_1997', children: [] },
+                { id: 'u_jade', branch: 'ag', primary: 'jade_2004', badge: 'Fille de Sandrine', children: [] },
+              ],
+            },
+            {
+              id: 'unit_julie',
+              branch: 'ag',
+              primary: 'julie_1972',
+              partner: 'serge_1968',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_yael', branch: 'ag', primary: 'yael_2001', children: [] },
+                { id: 'u_neo', branch: 'ag', primary: 'neo_2005', children: [] },
+                { id: 'u_goni', branch: 'ag', primary: 'goni_2015', children: [] },
+              ],
+            },
+            {
+              id: 'unit_brice',
+              branch: 'ag',
+              primary: 'brice_1977',
+              partner: 'eli_1979',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_avigail', branch: 'ag', primary: 'avigail_2009', children: [] },
+                { id: 'u_dori', branch: 'ag', primary: 'dori_2011', children: [] },
+                { id: 'u_eliott', branch: 'ag', primary: 'eliott_2015', children: [] },
+              ],
+            },
+            {
+              id: 'unit_benjamin',
+              branch: 'ag',
+              primary: 'benjamin_1981',
+              partner: 'tony_1982',
+              unionStatus: 'Mariés',
+              children: [
+                { id: 'u_gabriel', branch: 'ag', primary: 'gabriel_2010', children: [] },
+                { id: 'u_zoe13', branch: 'ag', primary: 'zoe_2013', children: [] },
+              ],
+            },
+          ],
+        },
+
+        // 4. Jean Rémy Lenfant
+        {
+          id: 'unit_jr',
+          branch: 'jr',
+          primary: 'jr_1944',
+          partner: 'naomie_morel',
+          unionStatus: '1er mariage',
+          secondPartner: 'claudette_1940',
+          secondUnionLabel: '2e mariage',
+          children: [
+            {
+              id: 'unit_constance',
+              branch: 'jr',
+              primary: 'constance_1968',
+              badge: 'Fille de Naomie',
+              children: [
+                { id: 'u_elea', branch: 'jr', primary: 'elea_menard', children: [] },
+                { id: 'u_jolan', branch: 'jr', primary: 'jolan_menard', children: [] },
+                { id: 'u_scarlett', branch: 'jr', primary: 'scarlett_2011', children: [] },
+                { id: 'u_voltaire', branch: 'jr', primary: 'voltaire_2017', children: [] },
+              ],
+            },
+            {
+              id: 'unit_geraldine',
+              branch: 'jr',
+              primary: 'geraldine_hochet',
+              badge: 'Fille de Claudette',
+              children: [
+                { id: 'u_stephanie', branch: 'jr', primary: 'stephanie_hochet', children: [] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const PEOPLE_MAP = new Map(PEOPLE.map(p => [p.id, p]));
+
+    const BRANCH_LABELS = {
+      root: 'Branche Fondatrice (Gén. 1)',
+      jp: 'Branche Jean Pierre Lenfant',
+      mf: 'Branche Marie France Lenfant',
+      ag: 'Branche André Gérard Lenfant',
+      jr: 'Branche Jean Rémy Lenfant',
+    };
+
+    const GEN_PALETTE = {
+      1: { fill: '#1E352F', text: '#FFFFFF', badgeBg: 'bg-forest-800 text-white', label: 'Gén. 1' },
+      2: { fill: '#C59B27', text: '#142621', badgeBg: 'bg-gold-500 text-forest-900', label: 'Gén. 2' },
+      3: { fill: '#396357', text: '#FFFFFF', badgeBg: 'bg-forest-600 text-white', label: 'Gén. 3' },
+      4: { fill: '#8B3A3A', text: '#FFFFFF', badgeBg: 'bg-burgundy-600 text-white', label: 'Gén. 4' },
+      5: { fill: '#5B21B6', text: '#FFFFFF', badgeBg: 'bg-purple-800 text-white', label: 'Gén. 5' },
+    };
+
+    // =========================================================================
+    // 3. APPLICATION STATE & SVG LAYOUT CONSTANTS
+    // =========================================================================
+    const CARD_W = 196;
+    const CARD_H = 88;
+    const COUPLE_GAP = 22;
+    const SIBLING_GAP = 28;
+    const LEVEL_H = 158;
+
+    const state = {
+      view: 'tree',
+      branchFilter: 'all',
+      genFilter: 'all',
+      sortByDate: false,
+      collapsedUnits: new Set(),
+      highlightedPersonId: null,
+      scale: 0.65,
+      tx: 40,
+      ty: 40,
+      treeBounds: { width: 2400, height: 950, rootX: 1200, rootY: 80 },
+      nodeCoords: new Map(), // personId -> { x, y }
+      hasInitialFit: false,
+    };
+
+    // =========================================================================
+    // 4. PURE SVG TREE RENDERER (NO foreignObject — 100% iOS/Android Compatible)
+    // =========================================================================
+    function svgEl(tag, attrs = {}) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, v);
+      }
+      return el;
+    }
+
+    function truncateText(str, maxChars) {
+      if (!str) return '';
+      return str.length > maxChars ? str.slice(0, maxChars - 1) + '…' : str;
+    }
+
+    function getUnitWidth(unit) {
+      let count = 1;
+      if (unit.partner) count++;
+      if (unit.secondPartner) count++;
+      return count * CARD_W + (count - 1) * COUPLE_GAP;
+    }
+
+    function getFilteredTree(unit) {
+      if (state.branchFilter === 'all') return unit;
+      if (unit.id === 'unit_founders') {
+        return {
+          ...unit,
+          children: unit.children.filter(c => c.branch === state.branchFilter),
+        };
+      }
+      return unit;
+    }
+
+    function computeSubtreeLayout(unit) {
+      const ownWidth = getUnitWidth(unit);
+      const isCollapsed = state.collapsedUnits.has(unit.id);
+      const visibleChildren = !isCollapsed && unit.children ? unit.children : [];
+
+      if (visibleChildren.length === 0) {
+        return { unit, ownWidth, subtreeWidth: ownWidth, childrenLayouts: [] };
+      }
+
+      const childrenLayouts = visibleChildren.map(computeSubtreeLayout);
+      const childrenSpan =
+        childrenLayouts.reduce((acc, c) => acc + c.subtreeWidth, 0) +
+        (childrenLayouts.length - 1) * SIBLING_GAP;
+
+      return {
+        unit,
+        ownWidth,
+        subtreeWidth: Math.max(ownWidth, childrenSpan),
+        childrenLayouts,
+      };
+    }
+
+    function getMaxTreeDepth(layout, d = 1) {
+      if (!layout.childrenLayouts.length) return d;
+      return Math.max(...layout.childrenLayouts.map(c => getMaxTreeDepth(c, d + 1)));
+    }
+
+    function renderSvgTree() {
+      const world = document.getElementById('svgWorldGroup');
+      world.innerHTML = '';
+      state.nodeCoords.clear();
+
+      const filteredRoot = getFilteredTree(TREE_ROOT);
+      const rootLayout = computeSubtreeLayout(filteredRoot);
+
+      const padX = 80;
+      const padTop = 55;
+      const totalWidth = rootLayout.subtreeWidth + padX * 2;
+      const maxDepth = getMaxTreeDepth(rootLayout);
+      const totalHeight = maxDepth * LEVEL_H + padTop + 120;
+
+      const connectorsGroup = svgEl('g', { id: 'connectorsLayer' });
+      const cardsGroup = svgEl('g', { id: 'cardsLayer' });
+      world.appendChild(connectorsGroup);
+      world.appendChild(cardsGroup);
+
+      function drawLayoutNode(layout, leftX, depth) {
+        const y = padTop + depth * LEVEL_H;
+        const unitCenterX = leftX + layout.subtreeWidth / 2;
+        const unitStartX = unitCenterX - layout.ownWidth / 2;
+        const u = layout.unit;
+
+        if (u.id === 'unit_founders') {
+          state.treeBounds.rootX = unitCenterX;
+          state.treeBounds.rootY = y + CARD_H / 2;
+        }
+
+        // Save coordinates for search centering
+        state.nodeCoords.set(u.primary, { x: unitCenterX, y: y + CARD_H / 2 });
+        if (u.partner) state.nodeCoords.set(u.partner, { x: unitCenterX, y: y + CARD_H / 2 });
+        if (u.secondPartner) state.nodeCoords.set(u.secondPartner, { x: unitCenterX, y: y + CARD_H / 2 });
+
+        let cursorX = unitStartX;
+
+        // Primary person card
+        const p1 = PEOPLE_MAP.get(u.primary);
+        cardsGroup.appendChild(createSvgPersonCard(p1, cursorX, y, u.badge));
+        cursorX += CARD_W;
+
+        // Partner 1 + connector
+        if (u.partner) {
+          const p2 = PEOPLE_MAP.get(u.partner);
+          const isDiv = u.unionStatus === 'Divorcés';
+          const midConnX = cursorX + COUPLE_GAP / 2;
+          const midConnY = y + CARD_H / 2;
+
+          connectorsGroup.appendChild(
+            svgEl('line', {
+              x1: cursorX,
+              y1: midConnY,
+              x2: cursorX + COUPLE_GAP,
+              y2: midConnY,
+              stroke: isDiv ? '#8B3A3A' : '#C59B27',
+              'stroke-width': '2.2',
+              'stroke-dasharray': isDiv ? '4,3' : 'none',
+            })
+          );
+
+          // Union status pill
+          const pillG = svgEl('g');
+          pillG.appendChild(
+            svgEl('rect', {
+              x: midConnX - 11,
+              y: midConnY - 9,
+              width: 22,
+              height: 18,
+              rx: 9,
+              fill: isDiv ? '#F8ECEC' : '#FBF5E4',
+              stroke: isDiv ? '#8B3A3A' : '#C59B27',
+              'stroke-width': '1.2',
+            })
+          );
+          const pillTxt = svgEl('text', {
+            x: midConnX,
+            y: midConnY + 3.5,
+            'text-anchor': 'middle',
+            'font-size': '9',
+            'font-weight': '700',
+            fill: isDiv ? '#8B3A3A' : '#A67F1E',
+          });
+          pillTxt.textContent = isDiv ? '≠' : '♥';
+          pillG.appendChild(pillTxt);
+          cardsGroup.appendChild(pillG);
+
+          cursorX += COUPLE_GAP;
+          cardsGroup.appendChild(createSvgPersonCard(p2, cursorX, y));
+          cursorX += CARD_W;
+        }
+
+        // Second partner (2e mariage)
+        if (u.secondPartner) {
+          const p3 = PEOPLE_MAP.get(u.secondPartner);
+          const midConnX2 = cursorX + COUPLE_GAP / 2;
+          const midConnY2 = y + CARD_H / 2;
+
+          connectorsGroup.appendChild(
+            svgEl('line', {
+              x1: cursorX,
+              y1: midConnY2,
+              x2: cursorX + COUPLE_GAP,
+              y2: midConnY2,
+              stroke: '#1E352F',
+              'stroke-width': '2',
+            })
+          );
+
+          const pillG2 = svgEl('g');
+          pillG2.appendChild(
+            svgEl('rect', {
+              x: midConnX2 - 12,
+              y: midConnY2 - 9,
+              width: 24,
+              height: 18,
+              rx: 9,
+              fill: '#E8F0EC',
+              stroke: '#1E352F',
+              'stroke-width': '1.2',
+            })
+          );
+          const pillTxt2 = svgEl('text', {
+            x: midConnX2,
+            y: midConnY2 + 3.5,
+            'text-anchor': 'middle',
+            'font-size': '8.5',
+            'font-weight': '700',
+            fill: '#1E352F',
+          });
+          pillTxt2.textContent = '2e';
+          pillG2.appendChild(pillTxt2);
+          cardsGroup.appendChild(pillG2);
+
+          cursorX += COUPLE_GAP;
+          cardsGroup.appendChild(createSvgPersonCard(p3, cursorX, y, u.secondUnionLabel));
+        }
+
+        // Collapse / Expand badge on nodes with descendants
+        if (u.children && u.children.length > 0 && u.id !== 'unit_founders') {
+          const isCollapsed = state.collapsedUnits.has(u.id);
+          const btnW = isCollapsed ? 68 : 26;
+          const btnH = 20;
+          const btnG = svgEl('g', {
+            class: 'svg-collapse-btn',
+            'data-unit-id': u.id,
+            style: 'cursor: pointer;',
+          });
+
+          btnG.appendChild(
+            svgEl('rect', {
+              x: unitCenterX - btnW / 2,
+              y: y + CARD_H - 9,
+              width: btnW,
+              height: btnH,
+              rx: 10,
+              fill: isCollapsed ? '#C59B27' : '#FFFFFF',
+              stroke: isCollapsed ? '#A67F1E' : '#D1C3AA',
+              'stroke-width': '1.4',
+            })
+          );
+
+          const btnTxt = svgEl('text', {
+            x: unitCenterX,
+            y: y + CARD_H + 4.5,
+            'text-anchor': 'middle',
+            'font-size': '10',
+            'font-weight': '700',
+            fill: isCollapsed ? '#142621' : '#1E352F',
+          });
+          btnTxt.textContent = isCollapsed ? `+${u.children.length} desc.` : '−';
+          btnG.appendChild(btnTxt);
+          cardsGroup.appendChild(btnG);
+        }
+
+        // Draw curved Bézier genealogical connectors to children
+        if (layout.childrenLayouts.length > 0) {
+          const parentBottomY = y + CARD_H;
+          const childTopY = y + LEVEL_H;
+          const midY = parentBottomY + (LEVEL_H - CARD_H) * 0.5;
+
+          const childrenSpan =
+            layout.childrenLayouts.reduce((s, c) => s + c.subtreeWidth, 0) +
+            (layout.childrenLayouts.length - 1) * SIBLING_GAP;
+
+          let childLeft = leftX + (layout.subtreeWidth - childrenSpan) / 2;
+
+          layout.childrenLayouts.forEach(cLayout => {
+            const cCenterX = childLeft + cLayout.subtreeWidth / 2;
+            const pathD = `M ${unitCenterX} ${parentBottomY} C ${unitCenterX} ${midY}, ${cCenterX} ${midY}, ${cCenterX} ${childTopY}`;
+            connectorsGroup.appendChild(
+              svgEl('path', {
+                d: pathD,
+                fill: 'none',
+                stroke: '#B6A689',
+                'stroke-width': '2',
+                'stroke-linecap': 'round',
+              })
+            );
+            drawLayoutNode(cLayout, childLeft, depth + 1);
+            childLeft += cLayout.subtreeWidth + SIBLING_GAP;
+          });
+        }
+      }
+
+      drawLayoutNode(rootLayout, padX, 0);
+
+      state.treeBounds.width = totalWidth;
+      state.treeBounds.height = totalHeight;
+      applySvgTransform();
+    }
+
+    function createSvgPersonCard(person, x, y, extraBadge = null) {
+      const g = svgEl('g', {
+        class: 'svg-card-group',
+        'data-person-id': person.id,
+        transform: `translate(${x}, ${y})`,
+      });
+
+      const pal = GEN_PALETTE[person.gen] || GEN_PALETTE[3];
+      const isHighlighted = state.highlightedPersonId === person.id;
+
+      // Main card background
+      g.appendChild(
+        svgEl('rect', {
+          class: 'card-bg',
+          x: 0,
+          y: 0,
+          width: CARD_W,
+          height: CARD_H,
+          rx: 14,
+          fill: isHighlighted ? '#FFFDF5' : '#FFFFFF',
+          stroke: isHighlighted ? '#C59B27' : '#DDD2BE',
+          'stroke-width': isHighlighted ? '3' : '1.4',
+          filter: isHighlighted ? 'url(#highlightGlow)' : 'url(#cardShadow)',
+        })
+      );
+
+      // Left generation accent strip
+      g.appendChild(
+        svgEl('rect', {
+          x: 0,
+          y: 12,
+          width: 4.5,
+          height: CARD_H - 24,
+          rx: 2.25,
+          fill: pal.fill,
+        })
+      );
+
+      // Generation Pill
+      g.appendChild(
+        svgEl('rect', {
+          x: 12,
+          y: 9,
+          width: 42,
+          height: 16,
+          rx: 8,
+          fill: pal.fill,
+        })
+      );
+      const genTxt = svgEl('text', {
+        x: 33,
+        y: 20,
+        'text-anchor': 'middle',
+        'font-size': '9',
+        'font-weight': '700',
+        fill: pal.text,
+      });
+      genTxt.textContent = pal.label;
+      g.appendChild(genTxt);
+
+      // Optional deceased or note tag on top right
+      const topRightTag = person.deceased ? 'Décédé' : extraBadge || person.note || '';
+      if (topRightTag) {
+        const tagTxt = svgEl('text', {
+          x: CARD_W - 10,
+          y: 20,
+          'text-anchor': 'end',
+          'font-size': '9',
+          'font-weight': '600',
+          fill: person.deceased ? '#6E2B2B' : '#8B3A3A',
+        });
+        tagTxt.textContent = truncateText(topRightTag, 18);
+        g.appendChild(tagTxt);
+      }
+
+      // Full Name (Serif)
+      const nameTxt = svgEl('text', {
+        x: 12,
+        y: 44,
+        'font-family': '"Cormorant Garamond", Georgia, serif',
+        'font-size': '17.5',
+        'font-weight': '700',
+        fill: '#142621',
+      });
+      nameTxt.textContent = truncateText(`${person.firstName} ${person.lastName}`, 22);
+      g.appendChild(nameTxt);
+
+      // Subtle divider line
+      g.appendChild(
+        svgEl('line', {
+          x1: 12,
+          y1: 54,
+          x2: CARD_W - 12,
+          y2: 54,
+          stroke: '#EFE8DA',
+          'stroke-width': '1',
+        })
+      );
+
+      // Birth Date & Birthplace
+      const birthLine = [person.birthDate, person.birthPlace].filter(Boolean).join(' • ') || 'Date non renseignée';
+      const birthTxt = svgEl('text', {
+        x: 12,
+        y: 71,
+        'font-size': '10.5',
+        'font-weight': '500',
+        fill: '#396357',
+      });
+      birthTxt.textContent = truncateText(birthLine, 28);
+      g.appendChild(birthTxt);
+
+      return g;
+    }
+
+    // =========================================================================
+    // 5. PAN, PINCH-TO-ZOOM & TAP DETECTION ON SVG
+    // =========================================================================
+    const svgElNode = document.getElementById('familySvg');
+    const worldGroup = document.getElementById('svgWorldGroup');
+    const viewportNode = document.getElementById('treeViewport');
+
+    function applySvgTransform() {
+      worldGroup.setAttribute('transform', `translate(${state.tx}, ${state.ty}) scale(${state.scale})`);
+      document.getElementById('zoomLabel').textContent = `${Math.round(state.scale * 100)}%`;
+    }
+
+    function zoomBy(delta, cx = null, cy = null) {
+      const rect = viewportNode.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const centerX = cx !== null ? cx : rect.width / 2;
+      const centerY = cy !== null ? cy : rect.height / 2;
+
+      const oldScale = state.scale;
+      const newScale = Math.min(Math.max(oldScale + delta, 0.16), 2.0);
+      if (newScale === oldScale) return;
+
+      const ratio = newScale / oldScale;
+      state.tx = centerX - (centerX - state.tx) * ratio;
+      state.ty = centerY - (centerY - state.ty) * ratio;
+      state.scale = newScale;
+      applySvgTransform();
+    }
+
+    function fitToScreen() {
+      const cw = viewportNode.clientWidth;
+      const ch = viewportNode.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+
+      const tw = state.treeBounds.width || 2400;
+      const th = state.treeBounds.height || 950;
+      const scaleX = (cw - 24) / tw;
+      const scaleY = (ch - 24) / th;
+      const fitScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.18), 0.92);
+
+      state.scale = fitScale;
+      state.tx = (cw - tw * fitScale) / 2;
+      state.ty = Math.max((ch - th * fitScale) / 2, 16);
+      applySvgTransform();
+    }
+
+    function centerOnRoot() {
+      const cw = viewportNode.clientWidth;
+      const ch = viewportNode.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+
+      const isMobile = cw < 768;
+      const targetScale = isMobile ? 0.68 : 0.85;
+      state.scale = targetScale;
+      state.tx = cw / 2 - state.treeBounds.rootX * targetScale;
+      state.ty = isMobile ? 54 : 44;
+      applySvgTransform();
+    }
+
+    function setInitialCamera() {
+      const cw = viewportNode.clientWidth;
+      const ch = viewportNode.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+
+      // On mobile (< 768px), frame the Root Founders + Gen 2 clearly at readable scale (~0.64)
+      // On desktop, fit the full tree nicely
+      if (cw < 768) {
+        centerOnRoot();
+      } else {
+        fitToScreen();
+      }
+      state.hasInitialFit = true;
+    }
+
+    // Unified Pointer / Touch & Tap handling (< 8px movement = tap)
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let downScreenX = 0;
+    let downScreenY = 0;
+    let downTarget = null;
+    let pinchStartDist = null;
+    let pinchStartScale = 1;
+
+    function handleSvgTap(target) {
+      if (!target) return;
+      const collapseBtn = target.closest('.svg-collapse-btn');
+      if (collapseBtn) {
+        const unitId = collapseBtn.getAttribute('data-unit-id');
+        if (unitId) {
+          if (state.collapsedUnits.has(unitId)) state.collapsedUnits.delete(unitId);
+          else state.collapsedUnits.add(unitId);
+          renderSvgTree();
+        }
+        return;
+      }
+
+      const cardGroup = target.closest('.svg-card-group');
+      if (cardGroup) {
+        const personId = cardGroup.getAttribute('data-person-id');
+        if (personId) openDetailModal(personId);
+      }
+    }
+
+    // Mouse Events
+    svgElNode.addEventListener('mousedown', (e) => {
+      isPanning = true;
+      downScreenX = e.clientX;
+      downScreenY = e.clientY;
+      downTarget = e.target;
+      panStartX = e.clientX - state.tx;
+      panStartY = e.clientY - state.ty;
+      svgElNode.classList.add('grabbing');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      state.tx = e.clientX - panStartX;
+      state.ty = e.clientY - panStartY;
+      applySvgTransform();
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isPanning) return;
+      isPanning = false;
+      svgElNode.classList.remove('grabbing');
+      const dist = Math.hypot(e.clientX - downScreenX, e.clientY - downScreenY);
+      if (dist < 8) handleSvgTap(downTarget);
+    });
+
+    // Wheel Zoom
+    svgElNode.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const rect = viewportNode.getBoundingClientRect();
+        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+        zoomBy(delta, e.clientX - rect.left, e.clientY - rect.top);
+      },
+      { passive: false }
+    );
+
+    // Touch Events (1-finger pan + 2-finger pinch zoom + tap)
+    svgElNode.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          isPanning = true;
+          pinchStartDist = null;
+          downScreenX = t.clientX;
+          downScreenY = t.clientY;
+          downTarget = e.target;
+          panStartX = t.clientX - state.tx;
+          panStartY = t.clientY - state.ty;
+        } else if (e.touches.length === 2) {
+          isPanning = false;
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          pinchStartDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          pinchStartScale = state.scale;
+        }
+      },
+      { passive: false }
+    );
+
+    svgElNode.addEventListener(
+      'touchmove',
+      (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && isPanning) {
+          const t = e.touches[0];
+          state.tx = t.clientX - panStartX;
+          state.ty = t.clientY - panStartY;
+          applySvgTransform();
+        } else if (e.touches.length === 2 && pinchStartDist) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const newDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          const rect = viewportNode.getBoundingClientRect();
+          const midX = (t1.clientX + t2.clientX) / 2 - rect.left;
+          const midY = (t1.clientY + t2.clientY) / 2 - rect.top;
+
+          const newScale = Math.min(Math.max(pinchStartScale * (newDist / pinchStartDist), 0.16), 2.0);
+          const ratio = newScale / state.scale;
+          state.tx = midX - (midX - state.tx) * ratio;
+          state.ty = midY - (midY - state.ty) * ratio;
+          state.scale = newScale;
+          applySvgTransform();
+        }
+      },
+      { passive: false }
+    );
+
+    svgElNode.addEventListener('touchend', (e) => {
+      if (isPanning && e.changedTouches.length === 1) {
+        const t = e.changedTouches[0];
+        const dist = Math.hypot(t.clientX - downScreenX, t.clientY - downScreenY);
+        if (dist < 8) handleSvgTap(downTarget);
+      }
+      isPanning = false;
+      pinchStartDist = null;
+    });
+
+    // =========================================================================
+    // 6. VIEW SWITCHING, BRANCH FILTERS & SEARCH
+    // =========================================================================
+    function switchView(view) {
+      state.view = view;
+      const treeVp = document.getElementById('treeViewport');
+      const dirView = document.getElementById('directoryView');
+      const btnTree = document.getElementById('btn-view-tree');
+      const btnDir = document.getElementById('btn-view-dir');
+
+      if (view === 'tree') {
+        treeVp.classList.remove('hidden');
+        dirView.classList.add('hidden');
+        btnTree.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gold-500 text-forest-900 shadow transition';
+        btnDir.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold text-parchment-200 hover:text-white transition';
+        requestAnimationFrame(() => applySvgTransform());
+      } else {
+        treeVp.classList.add('hidden');
+        dirView.classList.remove('hidden');
+        btnDir.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gold-500 text-forest-900 shadow transition';
+        btnTree.className = 'px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold text-parchment-200 hover:text-white transition';
+        renderDirectory();
+      }
+    }
+
+    function setBranchFilter(branch) {
+      state.branchFilter = branch;
+      document.querySelectorAll('.branch-pill').forEach(btn => {
+        if (btn.dataset.branch === branch) {
+          btn.classList.add('bg-forest-800', 'text-white');
+          btn.classList.remove('bg-white/90', 'text-forest-800');
+        } else {
+          btn.classList.remove('bg-forest-800', 'text-white');
+          btn.classList.add('bg-white/90', 'text-forest-800');
+        }
+      });
+
+      const count =
+        branch === 'all'
+          ? PEOPLE.length
+          : PEOPLE.filter(p => p.branch === branch || p.branch === 'root').length;
+      document.getElementById('statCounter').textContent = `${count} membres`;
+
+      renderSvgTree();
+      if (branch === 'all') setInitialCamera();
+      else fitToScreen();
+
+      if (state.view === 'directory') renderDirectory();
+    }
+
+    function setGenFilter(gen) {
+      state.genFilter = gen;
+      document.querySelectorAll('.gen-tab').forEach(btn => {
+        if (String(btn.dataset.gen) === String(gen)) {
+          btn.classList.add('bg-forest-800', 'text-white');
+          btn.classList.remove('text-forest-800');
+        } else {
+          btn.classList.remove('bg-forest-800', 'text-white');
+          btn.classList.add('text-forest-800');
+        }
+      });
+      renderDirectory();
+    }
+
+    function toggleDirectorySort() {
+      state.sortByDate = !state.sortByDate;
+      document.getElementById('dirSortBtn').textContent = state.sortByDate
+        ? 'Tri : Chronologique'
+        : 'Tri : Par Génération';
+      renderDirectory();
+    }
+
+    // Search Handling (Desktop & Mobile)
+    function toggleMobileSearch() {
+      const bar = document.getElementById('mobileSearchBar');
+      bar.classList.toggle('hidden');
+      if (!bar.classList.contains('hidden')) {
+        document.getElementById('mobileSearchInput').focus();
+      }
+    }
+
+    function bindSearch(inputId, dropdownId, clearBtnId = null) {
+      const input = document.getElementById(inputId);
+      const dropdown = document.getElementById(dropdownId);
+      const clearBtn = clearBtnId ? document.getElementById(clearBtnId) : null;
+
+      input.addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (clearBtn) clearBtn.classList.toggle('hidden', q.length === 0);
+
+        if (q.length < 2) {
+          dropdown.classList.add('hidden');
+          return;
+        }
+
+        const matches = PEOPLE.filter(p => {
+          const hay = `${p.firstName} ${p.lastName} ${p.birthPlace} ${p.birthDate} ${p.note || ''}`.toLowerCase();
+          return hay.includes(q);
+        });
+
+        if (matches.length === 0) {
+          dropdown.innerHTML = `<div class="p-3 text-xs text-forest-600 text-center">Aucun résultat pour « ${e.target.value} »</div>`;
+        } else {
+          dropdown.innerHTML = matches
+            .slice(0, 12)
+            .map(p => {
+              const pal = GEN_PALETTE[p.gen];
+              return `
+                <button onclick="focusPersonInTree('${p.id}')" class="w-full text-left px-3 py-2.5 hover:bg-parchment-100 flex items-center justify-between gap-2 transition">
+                  <div class="min-w-0">
+                    <div class="text-xs font-bold text-forest-900 truncate">${p.firstName} ${p.lastName}</div>
+                    <div class="text-[11px] text-forest-600 truncate">${[p.birthDate, p.birthPlace].filter(Boolean).join(' • ') || 'Famille Lenfant'}</div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${pal.badgeBg} shrink-0">${pal.label}</span>
+                </button>
+              `;
+            })
+            .join('');
+        }
+        dropdown.classList.remove('hidden');
+      });
+    }
+
+    bindSearch('desktopSearchInput', 'desktopSearchDropdown', 'desktopClearSearch');
+    bindSearch('mobileSearchInput', 'mobileSearchDropdown');
+
+    function clearSearch() {
+      document.getElementById('desktopSearchInput').value = '';
+      document.getElementById('mobileSearchInput').value = '';
+      document.getElementById('desktopClearSearch').classList.add('hidden');
+      document.getElementById('desktopSearchDropdown').classList.add('hidden');
+      document.getElementById('mobileSearchDropdown').classList.add('hidden');
+      state.highlightedPersonId = null;
+      renderSvgTree();
+    }
+
+    function focusPersonInTree(personId) {
+      document.getElementById('desktopSearchDropdown').classList.add('hidden');
+      document.getElementById('mobileSearchDropdown').classList.add('hidden');
+      document.getElementById('mobileSearchBar').classList.add('hidden');
+
+      const person = PEOPLE_MAP.get(personId);
+      if (!person) return;
+
+      if (state.view !== 'tree') switchView('tree');
+
+      if (state.branchFilter !== 'all' && person.branch !== 'root' && state.branchFilter !== person.branch) {
+        setBranchFilter('all');
+      }
+
+      state.collapsedUnits.clear();
+      state.highlightedPersonId = personId;
+      renderSvgTree();
+
+      const coords = state.nodeCoords.get(personId);
+      if (coords) {
+        const cw = viewportNode.clientWidth;
+        const ch = viewportNode.clientHeight;
+        const targetScale = cw < 768 ? 0.85 : 0.95;
+        state.scale = targetScale;
+        state.tx = cw / 2 - coords.x * targetScale;
+        state.ty = ch / 2 - coords.y * targetScale;
+        applySvgTransform();
+      }
+    }
+
+    // =========================================================================
+    // 7. DIRECTORY & CHRONOLOGY RENDERER
+    // =========================================================================
+    function parseBirthYear(dateStr) {
+      if (!dateStr) return 9999;
+      const m = dateStr.match(/(\d{4})/);
+      return m ? parseInt(m[1], 10) : 9999;
+    }
+
+    function renderDirectory() {
+      const grid = document.getElementById('directoryGrid');
+      let list = PEOPLE.filter(p => {
+        const branchOk = state.branchFilter === 'all' || p.branch === state.branchFilter || p.branch === 'root';
+        const genOk = state.genFilter === 'all' || p.gen === Number(state.genFilter);
+        return branchOk && genOk;
+      });
+
+      if (state.sortByDate) {
+        list = [...list].sort((a, b) => parseBirthYear(a.birthDate) - parseBirthYear(b.birthDate));
+      }
+
+      grid.innerHTML = list
+        .map(p => {
+          const pal = GEN_PALETTE[p.gen];
+          const birth = [p.birthDate, p.birthPlace].filter(Boolean).join(' • ') || 'Date non renseignée';
+          return `
+            <div onclick="openDetailModal('${p.id}')" class="bg-white rounded-2xl p-4 border border-parchment-300 hover:border-gold-500 shadow-xs transition cursor-pointer flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${pal.badgeBg}">${pal.label}</span>
+                  <span class="text-[11px] font-medium text-forest-600 truncate">${BRANCH_LABELS[p.branch].replace('Branche ', '')}</span>
+                </div>
+                <h4 class="font-serif text-xl font-bold text-forest-900">${p.firstName} ${p.lastName}</h4>
+                ${p.note ? `<p class="text-xs text-burgundy-600 font-semibold mt-1">${p.note}</p>` : ''}
+              </div>
+              <div class="mt-3.5 pt-2.5 border-t border-parchment-200 flex items-center justify-between text-xs text-forest-700">
+                <span>${birth}</span>
+                <span class="text-gold-600 font-bold">Fiche →</span>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // =========================================================================
+    // 8. BIOGRAPHICAL DETAIL DRAWER / BOTTOM SHEET
+    // =========================================================================
+    function findFamilyContext(personId) {
+      let parents = [];
+      let partners = [];
+      let children = [];
+
+      function traverse(unit, parentUnit = null) {
+        const isInUnit =
+          unit.primary === personId ||
+          unit.partner === personId ||
+          unit.secondPartner === personId;
+
+        if (isInUnit) {
+          if (unit.primary === personId && parentUnit) {
+            if (parentUnit.primary) parents.push(PEOPLE_MAP.get(parentUnit.primary));
+            if (parentUnit.partner) parents.push(PEOPLE_MAP.get(parentUnit.partner));
+            if (parentUnit.secondPartner && unit.badge && unit.badge.includes('Claudette')) {
+              parents.push(PEOPLE_MAP.get(parentUnit.secondPartner));
+            }
+          }
+
+          if (unit.primary === personId) {
+            if (unit.partner) partners.push({ person: PEOPLE_MAP.get(unit.partner), label: unit.unionStatus || 'Union' });
+            if (unit.secondPartner) partners.push({ person: PEOPLE_MAP.get(unit.secondPartner), label: unit.secondUnionLabel || '2e mariage' });
+          } else if (unit.partner === personId || unit.secondPartner === personId) {
+            partners.push({ person: PEOPLE_MAP.get(unit.primary), label: unit.unionStatus || 'Union' });
+          }
+
+          if (unit.children && unit.children.length > 0) {
+            unit.children.forEach(c => {
+              const cp = PEOPLE_MAP.get(c.primary);
+              if (cp) children.push(cp);
+            });
+          }
+        }
+
+        if (unit.children) {
+          unit.children.forEach(childUnit => traverse(childUnit, unit));
+        }
+      }
+
+      traverse(TREE_ROOT, null);
+      return { parents, partners, children };
+    }
+
+    function openDetailModal(personId) {
+      const person = PEOPLE_MAP.get(personId);
+      if (!person) return;
+
+      const pal = GEN_PALETTE[person.gen];
+      const badge = document.getElementById('modalGenBadge');
+      badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${pal.badgeBg}`;
+      badge.textContent = `Génération ${person.gen}`;
+
+      document.getElementById('modalBranchLabel').textContent = BRANCH_LABELS[person.branch];
+      document.getElementById('modalFullName').textContent = `${person.firstName} ${person.lastName}`;
+
+      const noteEl = document.getElementById('modalNoteBadge');
+      if (person.note) {
+        noteEl.textContent = person.note;
+        noteEl.classList.remove('hidden');
+      } else {
+        noteEl.classList.add('hidden');
+      }
+
+      const birthParts = [person.birthDate, person.birthPlace].filter(Boolean);
+      document.getElementById('modalBirth').textContent =
+        birthParts.length > 0 ? birthParts.join(' — ') : 'Non renseignée dans les archives';
+
+      const statusRow = document.getElementById('modalStatusRow');
+      if (person.deceased) {
+        statusRow.classList.remove('hidden');
+      } else {
+        statusRow.classList.add('hidden');
+      }
+
+      const { parents, partners, children } = findFamilyContext(personId);
+      const relContainer = document.getElementById('modalRelations');
+      let html = '';
+
+      if (partners.length > 0) {
+        html += `
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-forest-600 font-bold mb-2">Conjoint(e) / Partenaire</div>
+            <div class="space-y-2">
+              ${partners
+                .map(
+                  pt => `
+                <button onclick="openDetailModal('${pt.person.id}')" class="w-full text-left bg-white hover:bg-gold-100/50 border border-parchment-300 rounded-xl p-3 flex items-center justify-between transition">
+                  <div>
+                    <div class="text-sm font-bold text-forest-900">${pt.person.firstName} ${pt.person.lastName}</div>
+                    <div class="text-xs text-forest-600">${[pt.person.birthDate, pt.person.birthPlace].filter(Boolean).join(' • ') || 'Famille par alliance'}</div>
+                  </div>
+                  <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-parchment-200 text-forest-800">${pt.label}</span>
+                </button>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (parents.length > 0) {
+        html += `
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-forest-600 font-bold mb-2">Parents</div>
+            <div class="space-y-2">
+              ${parents
+                .map(
+                  pr => `
+                <button onclick="openDetailModal('${pr.id}')" class="w-full text-left bg-white hover:bg-parchment-200/60 border border-parchment-300 rounded-xl p-3 flex items-center justify-between transition">
+                  <div>
+                    <div class="text-sm font-bold text-forest-900">${pr.firstName} ${pr.lastName}</div>
+                    <div class="text-xs text-forest-600">${[pr.birthDate, pr.birthPlace].filter(Boolean).join(' • ')}</div>
+                  </div>
+                  <span class="text-xs text-gold-600 font-bold">Voir →</span>
+                </button>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (children.length > 0) {
+        html += `
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-forest-600 font-bold mb-2">Enfants (${children.length})</div>
+            <div class="space-y-2">
+              ${children
+                .map(
+                  ch => `
+                <button onclick="openDetailModal('${ch.id}')" class="w-full text-left bg-white hover:bg-parchment-200/60 border border-parchment-300 rounded-xl p-3 flex items-center justify-between transition">
+                  <div>
+                    <div class="text-sm font-bold text-forest-900">${ch.firstName} ${ch.lastName}</div>
+                    <div class="text-xs text-forest-600">${[ch.birthDate, ch.birthPlace].filter(Boolean).join(' • ') || ch.note || ''}</div>
+                  </div>
+                  <span class="text-xs text-gold-600 font-bold">Voir →</span>
+                </button>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      relContainer.innerHTML = html;
+
+      document.getElementById('modalLocateBtn').onclick = () => {
+        closeDetailModal();
+        focusPersonInTree(personId);
+      };
+
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    function closeModalBackdrop(e) {
+      if (e.target.id === 'detailModal') closeDetailModal();
+    }
+
+    // Close search dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#desktopSearchInput') && !e.target.closest('#desktopSearchDropdown')) {
+        document.getElementById('desktopSearchDropdown').classList.add('hidden');
+      }
+      if (!e.target.closest('#mobileSearchBar') && !e.target.closest('#mobileSearchToggleBtn')) {
+        document.getElementById('mobileSearchDropdown').classList.add('hidden');
+      }
+    });
+
+    // =========================================================================
+    // 9. ROBUST INITIALIZATION & RESIZE OBSERVER FOR MOBILE BROWSERS
+    // =========================================================================
+    function initTreeApp() {
+      renderSvgTree();
+      requestAnimationFrame(() => {
+        setInitialCamera();
+      });
+      setTimeout(() => {
+        if (!state.hasInitialFit || viewportNode.clientWidth > 0) {
+          setInitialCamera();
+        }
+      }, 120);
+    }
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => {
+        if (state.view === 'tree' && viewportNode.clientWidth > 0 && viewportNode.clientHeight > 0) {
+          if (!state.hasInitialFit) {
+            setInitialCamera();
+          }
+        }
+      });
+      ro.observe(viewportNode);
+    }
+
+    window.addEventListener('load', initTreeApp);
+    window.addEventListener('resize', () => {
+      if (state.view === 'tree') applySvgTransform();
+    });
+  </script>
+</body>
+</html>
